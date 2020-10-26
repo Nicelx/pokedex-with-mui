@@ -1,22 +1,35 @@
-import React, { useState } from 'react'
-import mockData from './mockData'
-import { Typography, Link } from '@material-ui/core';
+import React, { useState, useEffect } from 'react'
+import { Typography, Link, Button, CircularProgress } from '@material-ui/core';
 import { toFirstCharUppercase } from './constants'
+import axios from 'axios'
 
 const Pokemon = props => {
-	const {match} = props;
+	const {history, match} = props;
 	const {params} = match;
 	const { pokemonId} = params;
-	const [pokemon, setPokemon] = useState(mockData[`${pokemonId}`])
+	const [pokemon, setPokemon] = useState(undefined)
+
+	useEffect(() => {
+		axios
+			.get(`https://pokeapi.co/api/v2/pokemon/${pokemonId}/`)
+			.then(function (response) {
+				const {data} = response;
+				setPokemon(data);
+			})
+			.catch(function (error) {
+				setPokemon(false);
+			})
+	}, [pokemonId])
 
 	const generatePokemonJSX = () =>{
 		const { name, id, species, height, weight, types, sprites } = pokemon;
+		console.log(pokemon);
 		const fullImageUrl = `https://pokeres.bastionbot.org/images/pokemon/${id}.png`
 		const { front_default } = sprites;
 		return (
 			<>
 				<Typography variant = 'h1'>
-					{`${id}.`} {toFirstCharUppercase(name)}
+					{id}. {toFirstCharUppercase(name)}
 					<img src = {front_default} />
 				</Typography>
 				<img style = {{width: '300px' , height: '300px'}} src = {fullImageUrl}/>
@@ -31,16 +44,22 @@ const Pokemon = props => {
 				{types.map((typeInfo) => {
 					const { type } = typeInfo;
 					const { name } = type;
-					return <Typography key = {name}> {`${name}`}</Typography>
+					return <Typography key = {name}> {name}</Typography>
 				})}
 			</>
 		)
 	}
-
-
 	return (
 		<>
-			{generatePokemonJSX()}
+			{pokemon === undefined && <CircularProgress />}
+			{pokemon !== undefined && pokemon && generatePokemonJSX()}
+			{pokemon === false && <Typography> Pokemon not found</Typography>}
+			{pokemon !== undefined && (
+				<Button variant = 'contained' onClick = {() => history.push('/')}>
+					back to pokedex
+				</Button>
+			)}
+			
 		</>
 	)
 }
